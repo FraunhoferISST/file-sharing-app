@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: file-sharing-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: file-sharing-app
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: file-sharing-app
+    spec:
+      serviceAccountName: file-sharing-app
+      containers:
+        - name: file-sharing-app
+          image: file-sharing-app:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+            - containerPort: 5005
+              name: debug
+          env:
+            - name: SPRING_CONFIG_ADDITIONAL_LOCATION
+              value: /config/
+            - name: JAVA_TOOL_OPTIONS
+              value: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+          volumeMounts:
+            - name: app-config
+              mountPath: /config/application.yaml
+              subPath: application.yaml
+              readOnly: true
+      volumes:
+        - name: app-config
+          configMap:
+            name: file-sharing-app-config

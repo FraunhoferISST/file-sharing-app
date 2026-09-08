@@ -25,6 +25,7 @@ dependencies {
     implementation(platform("org.springframework.boot:spring-boot-dependencies:4.0.6"))
 
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 
     implementation("com.fasterxml.jackson.core:jackson-databind:2.22.1")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.22.1")
