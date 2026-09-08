@@ -1,37 +1,27 @@
 FROM eclipse-temurin:25-jdk-alpine AS build
 WORKDIR /workspace
 
-COPY gradlew ./
+COPY gradlew settings.gradle.kts build.gradle.kts ./
 COPY gradle ./gradle
 RUN chmod +x ./gradlew
 
-COPY settings.gradle.kts build.gradle.kts ./
-#COPY gradle.properties* ./
+RUN ./gradlew --no-daemon dependencies -x test
 
-RUN --mount=type=cache,target=/root/.gradle \
-    ./gradlew --no-daemon --version
+COPY src/main ./src/main
 
-COPY src ./src
-
-RUN --mount=type=cache,target=/root/.gradle \
-    ./gradlew --no-daemon bootJar -x test
-
-RUN mkdir -p /build && cp build/libs/*.jar /build/app.jar
-
-FROM eclipse-temurin:25-jre-alpine AS layers
-WORKDIR /app
-COPY --from=build /build/app.jar app.jar
-RUN java -Djarmode=tools -jar app.jar extract --layers --launcher --destination extracted
+RUN ./gradlew --no-daemon bootJar -x test && \
+    cp build/libs/*.jar app.jar && \
+    java -Djarmode=tools -jar app.jar extract --layers --launcher --destination extracted
 
 FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
-RUN groupadd --system spring && useradd --system --gid spring spring
+RUN addgroup --system spring && adduser --system -G spring spring
 
-COPY --from=layers --chown=spring:spring /app/extracted/dependencies/ ./
-COPY --from=layers --chown=spring:spring /app/extracted/spring-boot-loader/ ./
-COPY --from=layers --chown=spring:spring /app/extracted/snapshot-dependencies/ ./
-COPY --from=layers --chown=spring:spring /app/extracted/application/ ./
+COPY --from=build --chown=spring:spring /workspace/extracted/dependencies/ ./
+COPY --from=build --chown=spring:spring /workspace/extracted/spring-boot-loader/ ./
+COPY --from=build --chown=spring:spring /workspace/extracted/snapshot-dependencies/ ./
+COPY --from=build --chown=spring:spring /workspace/extracted/application/ ./
 
 USER spring:spring
 EXPOSE 8080

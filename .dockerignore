@@ -1,0 +1,12 @@
+.git
+.gitignore
+.gradle
+build
+bin
+.idea
+.classpath
+.project
+.settings
+*.iml
+README.md
+k8s
