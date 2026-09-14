@@ -26,15 +26,13 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
 
     implementation("com.fasterxml.jackson.core:jackson-databind:2.22.1")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.22.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-
-    runtimeOnly("com.h2database:h2")
-    runtimeOnly("org.postgresql:postgresql")
 }
 
 tasks.withType<Test> {

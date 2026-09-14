@@ -15,7 +15,7 @@
 package org.eclipse.dataspace.filesharing.api;
 
 import org.eclipse.dataspace.filesharing.domain.FileMetadata;
-import org.springframework.core.io.ClassPathResource;
+import org.eclipse.dataspace.filesharing.store.FileStore;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.MediaType;
@@ -31,7 +31,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.UUID;
 
 import static org.springframework.http.HttpHeaders.CONTENT_DISPOSITION;
 
@@ -41,50 +40,57 @@ public class FileController {
 
     //TODO accept Keycloak token as auth
 
-    @PostMapping("/{participantContextId}")
-    public ResponseEntity<Object> uploadFile(@PathVariable("participantContextId") String participantContextId,
-                                             @RequestParam("file") MultipartFile file) {
-        //TODO
+    private final FileStore fileStore;
 
-        return ResponseEntity.ok().build();
+    public FileController(FileStore fileStore) {
+        this.fileStore = fileStore;
     }
 
+    @PostMapping("/{participantContextId}")
+    public ResponseEntity<FileMetadata> uploadFile(@PathVariable("participantContextId") String participantContextId,
+                                                   @RequestParam("file") MultipartFile file) {
+        var storedMetadata = fileStore.save(participantContextId, file);
+
+        return ResponseEntity.ok(storedMetadata);
+    }
+
+    //TODO enable querying by e.g. date, file type, etc.
     @GetMapping("/{participantContextId}")
     public ResponseEntity<List<FileMetadata>> query(@PathVariable("participantContextId") String participantContextId) {
-        //TODO
-        var metadata = new FileMetadata(UUID.randomUUID().toString(), participantContextId, System.currentTimeMillis(), "application/json", 1234);
+        var metadataEntries = fileStore.query(participantContextId);
 
-        return ResponseEntity.ok(List.of(metadata));
+        return ResponseEntity.ok(metadataEntries);
     }
 
     @GetMapping("/{participantContextId}/{id}/metadata")
     public ResponseEntity<FileMetadata> getFileMetadata(@PathVariable("participantContextId") String participantContextId,
                                                         @PathVariable("id") String id) {
-        //TODO
-        var metadata = new FileMetadata(id, participantContextId, System.currentTimeMillis(), "application/json", 1234);
+        var metadata = fileStore.retrieveMetadata(participantContextId, id);
         return ResponseEntity.ok(metadata);
     }
 
     @GetMapping("/{participantContextId}/{id}")
     public ResponseEntity<Resource> downloadFile(@PathVariable("participantContextId") String participantContextId,
                                                  @PathVariable("id") String id) throws IOException {
-        //TODO
-        var resource = new ClassPathResource("files/test.json");
+        var resource = fileStore.retrieveFile(participantContextId, id);
         var contentDisposition = ContentDisposition.builder("attachment") //for automatic download; use "inline" to show file in browser
                 .filename(resource.getFilename())
                 .build();
 
+        var metadata = fileStore.retrieveMetadata(participantContextId, id);
+        var contentType = metadata.getContentType();
+
         return ResponseEntity.ok()
                 .header(CONTENT_DISPOSITION, contentDisposition.toString())
-                .contentType(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.parseMediaType(contentType))
                 .contentLength(resource.contentLength())
                 .body(resource);
     }
 
     @DeleteMapping("/{participantContextId}/{id}")
-    public ResponseEntity<Object> deleteFile(@PathVariable("participantContextId") String participantContextId,
-                                             @PathVariable("id") String id) {
-        //TODO
+    public ResponseEntity<Void> deleteFile(@PathVariable("participantContextId") String participantContextId,
+                                           @PathVariable("id") String id) {
+        fileStore.delete(participantContextId, id);
 
         return ResponseEntity.noContent().build();
     }
