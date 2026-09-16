@@ -4,18 +4,5 @@ kind: Kustomization
 namespace: edc-v
 
 resources:
-  - serviceaccount.yaml
-  - deployment.yaml
-  - service.yaml
-  - httproute.yaml
-
-configMapGenerator:
-  - name: file-sharing-app-config
-    files:
-      - application.yaml=application.yaml
-
-labels:
-  - includeSelectors: true
-    pairs:
-      app.kubernetes.io/name: file-sharing-app
-      app.kubernetes.io/part-of: edc
+  - mongodb
+  - app
