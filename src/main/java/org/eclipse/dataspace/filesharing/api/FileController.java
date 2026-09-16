@@ -38,8 +38,6 @@ import static org.springframework.http.HttpHeaders.CONTENT_DISPOSITION;
 @RequestMapping("/api/files")
 public class FileController {
 
-    //TODO accept Keycloak token as auth
-
     private final FileStore fileStore;
 
     public FileController(FileStore fileStore) {
@@ -54,10 +52,9 @@ public class FileController {
         return ResponseEntity.ok(storedMetadata);
     }
 
-    //TODO enable querying by e.g. date, file type, etc.
     @GetMapping("/{participantContextId}")
-    public ResponseEntity<List<FileMetadata>> query(@PathVariable("participantContextId") String participantContextId) {
-        var metadataEntries = fileStore.query(participantContextId);
+    public ResponseEntity<List<FileMetadata>> getAll(@PathVariable("participantContextId") String participantContextId) {
+        var metadataEntries = fileStore.getAll(participantContextId);
 
         return ResponseEntity.ok(metadataEntries);
     }
@@ -71,9 +68,12 @@ public class FileController {
 
     @GetMapping("/{participantContextId}/{id}")
     public ResponseEntity<Resource> downloadFile(@PathVariable("participantContextId") String participantContextId,
-                                                 @PathVariable("id") String id) throws IOException {
+                                                 @PathVariable("id") String id,
+                                                 @RequestParam(name = "disposition", defaultValue = "attachment") ContentDispositionValue disposition) throws IOException {
         var resource = fileStore.retrieveFile(participantContextId, id);
-        var contentDisposition = ContentDisposition.builder("attachment") //for automatic download; use "inline" to show file in browser
+
+        //use "attachment" for automatic download; use "inline" to show file in browser
+        var contentDisposition = ContentDisposition.builder(disposition.name().toLowerCase())
                 .filename(resource.getFilename())
                 .build();
 
@@ -93,5 +93,9 @@ public class FileController {
         fileStore.delete(participantContextId, id);
 
         return ResponseEntity.noContent().build();
+    }
+
+    public enum ContentDispositionValue {
+        ATTACHMENT, INLINE
     }
 }

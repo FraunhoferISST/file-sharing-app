@@ -77,7 +77,7 @@ public class FileStore {
      * @param participantContextId the participant context id
      * @return list of metadata entries
      */
-    public List<FileMetadata> query(String participantContextId) {
+    public List<FileMetadata> getAll(String participantContextId) {
         return fileMetadataRepository.findByParticipantContextId(participantContextId);
     }
 
