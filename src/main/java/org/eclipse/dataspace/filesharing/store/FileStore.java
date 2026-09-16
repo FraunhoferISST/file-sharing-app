@@ -113,7 +113,7 @@ public class FileStore {
         }
 
         var gridFsFile = gridFsTemplate.findOne(
-                new Query(Criteria.where("_id").is(new ObjectId(metadata.getGridFsFileId())))
+                new Query(Criteria.where("_id").is(metadata.getGridFsFileId()))
         );
 
         if (gridFsFile == null) {
@@ -137,7 +137,7 @@ public class FileStore {
         }
 
         gridFsTemplate.delete(
-                new Query(Criteria.where("_id").is(new ObjectId(metadata.getGridFsFileId())))
+                new Query(Criteria.where("_id").is(metadata.getGridFsFileId()))
         );
 
         fileMetadataRepository.deleteById(metadataId);
@@ -145,7 +145,7 @@ public class FileStore {
 
     private Query findByIdQuery(String participantContextId, String metadataId) {
         var query = new Query();
-        var idCriterion = Criteria.where("_id").is(new ObjectId(metadataId));
+        var idCriterion = Criteria.where("_id").is(metadataId);
         var participantContextIdCriterion = Criteria.where("participantContextId").is(participantContextId);
         query.addCriteria(new Criteria().andOperator(idCriterion, participantContextIdCriterion));
         return query;
