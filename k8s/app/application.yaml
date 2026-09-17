@@ -20,3 +20,6 @@ spring:
 logging:
   level:
     org.springframework: DEBUG
+siglet:
+  jwks:
+    uri: http://siglet:8080/keys

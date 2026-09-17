@@ -14,16 +14,16 @@
 
 package org.eclipse.dataspace.filesharing.api;
 
-import org.springframework.core.io.ClassPathResource;
+import org.eclipse.dataspace.filesharing.store.FileStore;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
@@ -33,28 +33,33 @@ import static org.springframework.http.HttpHeaders.CONTENT_DISPOSITION;
 @RequestMapping("/api/dataplane/files")
 public class FileSharingController {
 
-    //TODO accept Siglet's auth token
+    private static final String PARTICIPANT_CONTEXT_ID_CLAIM = "participantId";
+    private static final String FILE_ID_CLAIM = "fileId";
 
-    @RequestMapping("/push/{participantContextId}/{id}")
-    public ResponseEntity<Object> pushFile(@PathVariable("participantContextId") String participantContextId,
-                                           @PathVariable("id") String id, @RequestParam("file") MultipartFile file) {
-        //TODO
-        return ResponseEntity.ok().build();
+    private final FileStore fileStore;
+
+    public FileSharingController(FileStore fileStore) {
+        this.fileStore = fileStore;
     }
 
-    @RequestMapping("/pull/{participantContextId}/{id}")
-    public ResponseEntity<Resource> pullFile(@PathVariable("participantContextId") String participantContextId,
-                                             @PathVariable("id") String id) throws IOException {
-        //TODO
-        var resource = new ClassPathResource("files/test.json");
+    @GetMapping
+    public ResponseEntity<Resource> getFile(@AuthenticationPrincipal Jwt jwt) throws IOException {
+        var participantContextId = jwt.getClaimAsString(PARTICIPANT_CONTEXT_ID_CLAIM);
+        var fileId = jwt.getClaimAsString(FILE_ID_CLAIM);
+
+        var resource = fileStore.retrieveFile(participantContextId, fileId);
+        var metadata = fileStore.retrieveMetadata(participantContextId, fileId);
+        var contentType = metadata.getContentType();
+
         var contentDisposition = ContentDisposition.builder("attachment")
                 .filename(resource.getFilename())
                 .build();
 
         return ResponseEntity.ok()
                 .header(CONTENT_DISPOSITION, contentDisposition.toString())
-                .contentType(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.parseMediaType(contentType))
                 .contentLength(resource.contentLength())
                 .body(resource);
     }
+
 }

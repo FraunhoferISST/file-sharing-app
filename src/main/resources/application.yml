@@ -17,3 +17,6 @@ spring:
     username: admin
     password: password
     authentication-database: admin
+siglet:
+  jwks:
+    uri: http://siglet:8080/keys
