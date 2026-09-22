@@ -38,22 +38,6 @@ public class SecurityConfig {
     @Bean
     @Profile("!local")
     @Order(1)
-    public SecurityFilterChain keycloakFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .cors(Customizer.withDefaults())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyRequest().authenticated())
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
-
-        return http.build();
-    }
-
-    @Bean
-    @Profile("!local")
-    @Order(2)
     public SecurityFilterChain sigletFilterChain(HttpSecurity http, @Value("${siglet.jwks.uri}") String sigletJwksUri) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -65,6 +49,23 @@ public class SecurityConfig {
                         .jwt(jwt -> jwt.decoder(
                                 NimbusJwtDecoder.withJwkSetUri(sigletJwksUri).build()
                         )));
+        return http.build();
+    }
+
+    @Bean
+    @Profile("!local")
+    @Order(2)
+    public SecurityFilterChain keycloakFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .securityMatcher(request -> !request.getServletPath().startsWith("/api/dataplane/files/"))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .anyRequest().authenticated())
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
+
         return http.build();
     }
 
