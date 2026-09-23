@@ -19,7 +19,7 @@ spring:
     authentication-database: admin
 logging:
   level:
-    org.springframework: DEBUG
+    org.eclipse: DEBUG
 siglet:
   jwks:
     uri: http://siglet:8080/keys

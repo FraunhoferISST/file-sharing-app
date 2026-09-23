@@ -14,10 +14,13 @@
 
 package org.eclipse.dataspace.filesharing.store;
 
+import tools.jackson.databind.JsonNode;
 import org.bson.types.ObjectId;
 import org.eclipse.dataspace.filesharing.domain.FileMetadata;
 import org.eclipse.dataspace.filesharing.exception.PersistenceException;
 import org.eclipse.dataspace.filesharing.exception.ResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -32,6 +35,8 @@ import java.util.UUID;
 
 @Service
 public class FileStore {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileStore.class);
 
     private final GridFsTemplate gridFsTemplate;
     private final FileMetadataRepository fileMetadataRepository;
@@ -48,9 +53,11 @@ public class FileStore {
      *
      * @param participantContextId the participant context id the file belongs to
      * @param file the file
+     * @param metadata additional key/value metadata to persist alongside the file
      * @return the stored metadata
      */
-    public FileMetadata save(String participantContextId, MultipartFile file) {
+    public FileMetadata save(String participantContextId, MultipartFile file, JsonNode metadata) {
+        LOGGER.debug("Saving file '{}' for participant context '{}' with metadata {}", file.getOriginalFilename(), participantContextId, metadata);
         ObjectId gridFileId;
         try {
             gridFileId = gridFsTemplate.store(file.getInputStream(), file.getOriginalFilename(), file.getContentType());
@@ -58,7 +65,7 @@ public class FileStore {
             throw new PersistenceException("Failed to persist file.", e);
         }
 
-        var metadata = FileMetadata.Builder.newInstance()
+        var fileMetadata = FileMetadata.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
                 .participantContextId(participantContextId)
                 .fileName(file.getOriginalFilename())
@@ -66,9 +73,12 @@ public class FileStore {
                 .contentLength(file.getSize())
                 .uploadTimestamp(System.currentTimeMillis())
                 .gridFsFileId(gridFileId.toString())
+                .metadata(metadata)
                 .build();
 
-        return fileMetadataRepository.save(metadata);
+        var stored = fileMetadataRepository.save(fileMetadata);
+        LOGGER.debug("Persisted file metadata with id '{}' and metadata {}", stored.getId(), stored.getMetadata());
+        return stored;
     }
 
     /**

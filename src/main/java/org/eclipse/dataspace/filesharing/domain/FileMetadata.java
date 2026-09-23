@@ -14,6 +14,7 @@
 
 package org.eclipse.dataspace.filesharing.domain;
 
+import tools.jackson.databind.JsonNode;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -32,6 +33,8 @@ public class FileMetadata {
     private long uploadTimestamp;
 
     private String gridFsFileId;
+
+    private JsonNode metadata;
 
     public String getId() {
         return id;
@@ -59,6 +62,10 @@ public class FileMetadata {
 
     public String getGridFsFileId() {
         return gridFsFileId;
+    }
+
+    public JsonNode getMetadata() {
+        return metadata;
     }
 
     public static class Builder {
@@ -104,6 +111,11 @@ public class FileMetadata {
 
         public Builder gridFsFileId(String gridFsFileId) {
             this.fileMetadata.gridFsFileId = gridFsFileId;
+            return this;
+        }
+
+        public Builder metadata(JsonNode metadata) {
+            this.fileMetadata.metadata = metadata;
             return this;
         }
 
