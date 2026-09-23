@@ -4,7 +4,7 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: http://keycloak.jad.localhost/realms/jad-dev
-          jwk-set-uri: http://keycloak.jad-auth.svc.cluster.local/realms/jad-dev/protocol/openid-connect/certs
+          jwk-set-uri: http://keycloak.edc-v.svc.cluster.local/realms/jad-dev/protocol/openid-connect/certs
   servlet:
     multipart:
       enabled: true
