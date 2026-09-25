@@ -14,6 +14,7 @@
 
 package org.eclipse.dataspace.filesharing.api;
 
+import org.eclipse.dataspace.filesharing.exception.ParticipantContextMismatchException;
 import org.eclipse.dataspace.filesharing.exception.ResourceNotFoundException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,6 +22,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class ExceptionMapper {
+
+    @ExceptionHandler(ParticipantContextMismatchException.class)
+    public ResponseEntity<String> handleParticipantContextMismatch(ParticipantContextMismatchException ex) {
+        return ResponseEntity.status(403).body(ex.getMessage());
+    }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<String> handleResourceNotFound(ResourceNotFoundException ex) {

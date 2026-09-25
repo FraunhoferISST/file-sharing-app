@@ -23,3 +23,6 @@ logging:
 siglet:
   jwks:
     uri: http://siglet:8080/keys
+filesharing:
+  claims:
+    participant-id: participant_context_id

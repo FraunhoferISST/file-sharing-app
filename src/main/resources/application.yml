@@ -20,3 +20,6 @@ spring:
 siglet:
   jwks:
     uri: http://siglet:8080/keys
+filesharing:
+  claims:
+    participant-id: participantId

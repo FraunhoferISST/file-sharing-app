@@ -15,13 +15,18 @@
 package org.eclipse.dataspace.filesharing.api;
 
 import org.eclipse.dataspace.filesharing.domain.FileMetadata;
+import org.eclipse.dataspace.filesharing.exception.ParticipantContextMismatchException;
 import org.eclipse.dataspace.filesharing.store.FileStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -47,20 +52,25 @@ public class FileController {
 
     private final FileStore fileStore;
     private final ObjectMapper objectMapper;
+    private final String participantIdClaim;
 
-    public FileController(FileStore fileStore, ObjectMapper objectMapper) {
+    public FileController(FileStore fileStore, ObjectMapper objectMapper,
+                          @Value("${filesharing.claims.participant-id:participant_context_id}") String participantIdClaim) {
         this.fileStore = fileStore;
         this.objectMapper = objectMapper;
+        this.participantIdClaim = participantIdClaim;
     }
 
     @PostMapping("/{participantContextId}")
     public ResponseEntity<FileMetadata> uploadFile(@PathVariable("participantContextId") String participantContextId,
                                                    @RequestParam("file") MultipartFile file,
-                                                   @RequestParam(value = "metadata", required = false) String metadataJson) throws IOException {
-        LOGGER.debug("Upload request for participant context '{}' file '{}' metadata JSON = {}", participantContextId, file.getOriginalFilename(), metadataJson);
+                                                   @RequestParam(value = "metadata", required = false) String metadataJson,
+                                                   @AuthenticationPrincipal Jwt jwt) throws IOException {
+        var authenticatedParticipantId = participantId(jwt, participantContextId);
+        LOGGER.debug("Upload request for participant context '{}' file '{}' metadata JSON = {}", authenticatedParticipantId, file.getOriginalFilename(), metadataJson);
 
         JsonNode metadata = parseMetadata(metadataJson);
-        var storedMetadata = fileStore.save(participantContextId, file, metadata);
+        var storedMetadata = fileStore.save(authenticatedParticipantId, file, metadata);
 
         return ResponseEntity.ok(storedMetadata);
     }
@@ -73,31 +83,35 @@ public class FileController {
     }
 
     @GetMapping("/{participantContextId}")
-    public ResponseEntity<List<FileMetadata>> getAll(@PathVariable("participantContextId") String participantContextId) {
-        var metadataEntries = fileStore.getAll(participantContextId);
+    public ResponseEntity<List<FileMetadata>> getAll(@PathVariable("participantContextId") String participantContextId,
+                                                     @AuthenticationPrincipal Jwt jwt) {
+        var metadataEntries = fileStore.getAll(participantId(jwt, participantContextId));
 
         return ResponseEntity.ok(metadataEntries);
     }
 
     @GetMapping("/{participantContextId}/{id}/metadata")
     public ResponseEntity<FileMetadata> getFileMetadata(@PathVariable("participantContextId") String participantContextId,
-                                                        @PathVariable("id") String id) {
-        var metadata = fileStore.retrieveMetadata(participantContextId, id);
+                                                        @PathVariable("id") String id,
+                                                        @AuthenticationPrincipal Jwt jwt) {
+        var metadata = fileStore.retrieveMetadata(participantId(jwt, participantContextId), id);
         return ResponseEntity.ok(metadata);
     }
 
     @GetMapping("/{participantContextId}/{id}")
     public ResponseEntity<Resource> downloadFile(@PathVariable("participantContextId") String participantContextId,
                                                  @PathVariable("id") String id,
-                                                 @RequestParam(name = "disposition", defaultValue = "attachment") ContentDispositionValue disposition) throws IOException {
-        var resource = fileStore.retrieveFile(participantContextId, id);
+                                                 @RequestParam(name = "disposition", defaultValue = "attachment") ContentDispositionValue disposition,
+                                                 @AuthenticationPrincipal Jwt jwt) throws IOException {
+        var authenticatedParticipantId = participantId(jwt, participantContextId);
+        var resource = fileStore.retrieveFile(authenticatedParticipantId, id);
 
         //use "attachment" for automatic download; use "inline" to show file in browser
         var contentDisposition = ContentDisposition.builder(disposition.name().toLowerCase())
                 .filename(resource.getFilename())
                 .build();
 
-        var metadata = fileStore.retrieveMetadata(participantContextId, id);
+        var metadata = fileStore.retrieveMetadata(authenticatedParticipantId, id);
         var contentType = metadata.getContentType();
 
         return ResponseEntity.ok()
@@ -109,10 +123,22 @@ public class FileController {
 
     @DeleteMapping("/{participantContextId}/{id}")
     public ResponseEntity<Void> deleteFile(@PathVariable("participantContextId") String participantContextId,
-                                           @PathVariable("id") String id) {
-        fileStore.delete(participantContextId, id);
+                                           @PathVariable("id") String id,
+                                           @AuthenticationPrincipal Jwt jwt) {
+        fileStore.delete(participantId(jwt, participantContextId), id);
 
         return ResponseEntity.noContent().build();
+    }
+
+    private String participantId(Jwt jwt, String pathParticipantContextId) {
+        var participantId = jwt.getClaimAsString(participantIdClaim);
+        if (participantId == null || participantId.isBlank()) {
+            throw new IllegalStateException("JWT is missing required claim '%s'".formatted(participantIdClaim));
+        }
+        if (!participantId.equals(pathParticipantContextId)) {
+            throw new ParticipantContextMismatchException();
+        }
+        return participantId;
     }
 
     public enum ContentDispositionValue {
