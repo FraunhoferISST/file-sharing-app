@@ -22,7 +22,7 @@ logging:
     org.eclipse: DEBUG
 siglet:
   jwks:
-    uri: http://siglet:8080/keys
+    uri: http://siglet.edc-v.svc.cluster.local:8080/keys
 filesharing:
   claims:
     participant-id: participant_context_id

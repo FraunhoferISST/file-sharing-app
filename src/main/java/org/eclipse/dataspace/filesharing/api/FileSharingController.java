@@ -15,7 +15,6 @@
 package org.eclipse.dataspace.filesharing.api;
 
 import org.eclipse.dataspace.filesharing.store.FileStore;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.MediaType;
@@ -34,20 +33,18 @@ import static org.springframework.http.HttpHeaders.CONTENT_DISPOSITION;
 @RequestMapping("/api/dataplane/files")
 public class FileSharingController {
 
+    private static final String PARTICIPANT_CONTEXT_ID_CLAIM = "participantContextId";
     private static final String FILE_ID_CLAIM = "fileId";
 
     private final FileStore fileStore;
-    private final String participantIdClaim;
 
-    public FileSharingController(FileStore fileStore,
-                                 @Value("${filesharing.claims.participant-id:participantId}") String participantIdClaim) {
+    public FileSharingController(FileStore fileStore) {
         this.fileStore = fileStore;
-        this.participantIdClaim = participantIdClaim;
     }
 
     @GetMapping
     public ResponseEntity<Resource> getFile(@AuthenticationPrincipal Jwt jwt) throws IOException {
-        var participantContextId = jwt.getClaimAsString(participantIdClaim);
+        var participantContextId = jwt.getClaimAsString(PARTICIPANT_CONTEXT_ID_CLAIM);
         var fileId = jwt.getClaimAsString(FILE_ID_CLAIM);
 
         var resource = fileStore.retrieveFile(participantContextId, fileId);
