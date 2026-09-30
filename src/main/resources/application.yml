@@ -22,4 +22,4 @@ siglet:
     uri: http://siglet:8080/keys
 filesharing:
   claims:
-    participant-id: participantId
+    participant-id: participant_context_id
