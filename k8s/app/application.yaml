@@ -23,6 +23,8 @@ logging:
 siglet:
   jwks:
     uri: http://siglet.edc-v.svc.cluster.local:8080/keys
+  token:
+    issuer: siglet-issuer
 keycloak:
   token:
     claims:

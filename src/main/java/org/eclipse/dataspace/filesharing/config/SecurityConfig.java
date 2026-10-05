@@ -14,11 +14,6 @@
 
 package org.eclipse.dataspace.filesharing.config;
 
-import com.nimbusds.jose.crypto.Ed25519Verifier;
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.OctetKeyPair;
-import com.nimbusds.jwt.SignedJWT;
-import org.eclipse.dataspace.filesharing.exception.InvalidTokenException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -30,7 +25,6 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -38,46 +32,10 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.net.URL;
 import java.util.List;
 
 @Configuration
 public class SecurityConfig {
-
-    @Bean("sigletJwtDecoder")
-    public JwtDecoder sigletJwtDecoder(@Value("${siglet.jwks.uri}") String sigletJwksUri) throws Exception {
-        return token -> {
-            try {
-                var signedJWT = SignedJWT.parse(token);
-                var jwkSet = JWKSet.load(new URL(sigletJwksUri));
-                var jwk = jwkSet.getKeyByKeyId(signedJWT.getHeader().getKeyID());
-
-                if (!(jwk instanceof OctetKeyPair okp)) {
-                    throw new InvalidTokenException("No matching Ed25519 key found");
-                }
-
-                if (!signedJWT.verify(new Ed25519Verifier(okp))) {
-                    throw new InvalidTokenException("JWT signature verification failed");
-                }
-
-                var claims = signedJWT.getJWTClaimsSet();
-
-                return Jwt.withTokenValue(token)
-                        .headers(h -> h.putAll(signedJWT.getHeader().toJSONObject()))
-                        .issuedAt(claims.getIssueTime() != null ? claims.getIssueTime().toInstant() : null)
-                        .expiresAt(claims.getExpirationTime() != null ? claims.getExpirationTime().toInstant() : null)
-                        .notBefore(claims.getNotBeforeTime() != null ? claims.getNotBeforeTime().toInstant() : null)
-                        .claims(c -> claims.getClaims().forEach((k, v) -> {
-                            if (!"iat".equals(k) && !"exp".equals(k) && !"nbf".equals(k)) {
-                                c.put(k, v);
-                            }
-                        }))
-                        .build();
-            } catch (Exception e) {
-                throw new InvalidTokenException("Failed to decode JWT: " + e.getMessage(), e);
-            }
-        };
-    }
 
     @Bean
     @Profile("!local")
