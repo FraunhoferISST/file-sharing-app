@@ -76,18 +76,6 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Profile("local")
-    public SecurityFilterChain localSecurityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .cors(Customizer.withDefaults())
-                .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll());
-
-        return http.build();
-    }
-
-    @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         var configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of("*"));
