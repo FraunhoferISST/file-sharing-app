@@ -43,6 +43,9 @@ import java.util.Map;
 
 import static org.springframework.http.HttpHeaders.CONTENT_DISPOSITION;
 
+/**
+ * Defines the API endpoints through which users can manage their own files.
+ */
 @RestController
 @RequestMapping("/api/files")
 public class FileController {

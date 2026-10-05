@@ -29,6 +29,11 @@ import org.springframework.stereotype.Component;
 
 import java.net.URL;
 
+/**
+ * JWT decoder for handling Siglet-issued tokens. This is required, as Spring Security does not
+ * currently support EdDSA. Uses Nimbus to decode and verify the incoming token, and constructs a
+ * Spring Security JWT from it.
+ */
 @Component("sigletJwtDecoder")
 public class SigletJwtDecoder implements JwtDecoder {
 

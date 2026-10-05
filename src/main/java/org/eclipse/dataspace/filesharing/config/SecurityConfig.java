@@ -37,6 +37,10 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
 
+    /**
+     * Security filter chain for the file sharing API. Secures the request paths of the file sharing
+     * API using Siglet-issued tokens.
+     */
     @Bean
     @Profile("!local")
     @Order(1)
@@ -53,11 +57,21 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Provides a standard JWT decoder for handling Keycloak tokens.
+     *
+     * @param jwkSetUri the URI against which to verify the tokens
+     * @return the JWT decoder
+     */
     @Bean("keycloakJwtDecoder")
     public JwtDecoder keycloakJwtDecoder(@Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}") String jwkSetUri) {
         return NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
     }
 
+    /**
+     * Security filter chain for all other APIs. Secures all requests paths that are not part of
+     * the file sharing API with Keycloak-issued tokens.
+     */
     @Bean
     @Profile("!local")
     @Order(2)

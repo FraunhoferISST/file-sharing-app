@@ -29,6 +29,10 @@ import java.io.IOException;
 
 import static org.springframework.http.HttpHeaders.CONTENT_DISPOSITION;
 
+/**
+ * Defines the API endpoint which other participants will use to request a file as part of a data
+ * transfer.
+ */
 @RestController
 @RequestMapping("/api/dataplane/files")
 public class FileSharingController {

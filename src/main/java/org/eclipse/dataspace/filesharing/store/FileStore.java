@@ -33,6 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Store for persisting files and corresponding metadata. Files and metadata are stored in MongoDB.
+ */
 @Service
 public class FileStore {
 
