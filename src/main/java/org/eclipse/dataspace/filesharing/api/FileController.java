@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -35,12 +34,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
-import tools.jackson.databind.JsonNode;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import static org.springframework.http.HttpHeaders.CONTENT_DISPOSITION;
 
@@ -69,17 +68,10 @@ public class FileController {
         var authenticatedParticipantId = participantId(jwt, participantContextId);
         LOGGER.debug("Upload request for participant context '{}' file '{}' metadata JSON = {}", authenticatedParticipantId, file.getOriginalFilename(), metadataJson);
 
-        JsonNode metadata = parseMetadata(metadataJson);
+        var metadata = parseMetadata(metadataJson);
         var storedMetadata = fileStore.save(authenticatedParticipantId, file, metadata);
 
         return ResponseEntity.ok(storedMetadata);
-    }
-
-    private JsonNode parseMetadata(String metadataJson) throws IOException {
-        if (metadataJson == null || metadataJson.isBlank()) {
-            return null;
-        }
-        return objectMapper.readTree(metadataJson);
     }
 
     @GetMapping("/{participantContextId}")
@@ -139,6 +131,15 @@ public class FileController {
             throw new ParticipantContextMismatchException();
         }
         return participantId;
+    }
+
+    private Map<String, Object> parseMetadata(String metadataJson) throws IOException {
+        if (metadataJson == null || metadataJson.isBlank()) {
+            return null;
+        }
+
+        var mapType = new TypeReference<Map<String, Object>>() {};
+        return objectMapper.readValue(metadataJson, mapType);
     }
 
     public enum ContentDispositionValue {

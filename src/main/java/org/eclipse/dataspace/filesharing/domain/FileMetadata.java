@@ -14,10 +14,10 @@
 
 package org.eclipse.dataspace.filesharing.domain;
 
-import tools.jackson.databind.JsonNode;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.Map;
 import java.util.Objects;
 
 @Document(collection = "file_metadata")
@@ -34,7 +34,7 @@ public class FileMetadata {
 
     private String gridFsFileId;
 
-    private JsonNode metadata;
+    private Map<String, Object> metadata;
 
     public String getId() {
         return id;
@@ -64,7 +64,7 @@ public class FileMetadata {
         return gridFsFileId;
     }
 
-    public JsonNode getMetadata() {
+    public Map<String, Object> getMetadata() {
         return metadata;
     }
 
@@ -114,7 +114,7 @@ public class FileMetadata {
             return this;
         }
 
-        public Builder metadata(JsonNode metadata) {
+        public Builder metadata(Map<String, Object> metadata) {
             this.fileMetadata.metadata = metadata;
             return this;
         }
