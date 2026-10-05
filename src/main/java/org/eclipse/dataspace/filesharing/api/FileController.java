@@ -55,7 +55,7 @@ public class FileController {
     private final String participantIdClaim;
 
     public FileController(FileStore fileStore, ObjectMapper objectMapper,
-                          @Value("${filesharing.claims.participant-id:participant_context_id}") String participantIdClaim) {
+                          @Value("${keycloak.token.claims.participant-id:participant_context_id}") String participantIdClaim) {
         this.fileStore = fileStore;
         this.objectMapper = objectMapper;
         this.participantIdClaim = participantIdClaim;
