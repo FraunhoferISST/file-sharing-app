@@ -1,32 +1,40 @@
-FROM eclipse-temurin:25-jdk-alpine AS build
-WORKDIR /workspace
-
-COPY gradlew settings.gradle.kts build.gradle.kts ./
-COPY gradle ./gradle
-RUN chmod +x ./gradlew
-
-RUN ./gradlew --no-daemon dependencies -x test
-
-COPY src/main ./src/main
-
-RUN ./gradlew --no-daemon bootJar -x test && \
-    cp build/libs/*.jar app.jar && \
-    java -Djarmode=tools -jar app.jar extract --layers --launcher --destination extracted
-
-FROM eclipse-temurin:25-jre-alpine
+# Build stage
+FROM gradle:9.5-jdk21 AS build
 WORKDIR /app
 
-RUN addgroup --system spring && adduser --system -G spring spring
+# Copy gradle files for dependency caching
+COPY build.gradle.kts settings.gradle.kts gradlew ./
+COPY gradle ./gradle
 
-COPY --from=build --chown=spring:spring /workspace/extracted/dependencies/ ./
-COPY --from=build --chown=spring:spring /workspace/extracted/spring-boot-loader/ ./
-COPY --from=build --chown=spring:spring /workspace/extracted/snapshot-dependencies/ ./
-COPY --from=build --chown=spring:spring /workspace/extracted/application/ ./
+# Download dependencies (cached layer)
+RUN ./gradlew dependencies --no-daemon
 
-USER spring:spring
-EXPOSE 8080
+# Copy source code
+COPY src ./src
 
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
+# Build the application
+RUN ./gradlew bootJar --no-daemon
+
+# Runtime stage
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup -S spring && adduser -S spring -G spring
+
+# Copy the built jar from build stage
+COPY --from=build --chown=spring:spring /app/build/libs/*.jar app.jar
+
+# Spring Boot listens on 8080 by default (see k8s service/container ports)
+EXPOSE 8080 5005
+
+# Set default profile
 ENV SPRING_PROFILES_ACTIVE=prod
 
-ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS org.springframework.boot.loader.launch.JarLauncher"]
+# JVM options
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
+
+USER spring:spring
+
+# Run the application
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]

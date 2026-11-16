@@ -42,6 +42,10 @@ dependencies {
     testImplementation("org.testcontainers:mongodb:1.21.4")
 }
 
+springBoot {
+    mainClass.set("org.eclipse.dataspace.filesharing.FileSharingApplication")
+}
+
 tasks.withType<Test> {
     useJUnitPlatform()
 }

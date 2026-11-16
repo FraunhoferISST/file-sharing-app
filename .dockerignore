@@ -10,3 +10,4 @@ bin
 *.iml
 README.md
 k8s
+.env
